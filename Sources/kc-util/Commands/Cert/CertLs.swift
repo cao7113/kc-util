@@ -4,7 +4,8 @@ import KeychainKit
 struct CertLs: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "ls",
-        abstract: "列出 Keychain 中的证书列表 (过滤 Subject 或 Issuer，支持 limit 限制)"
+        abstract: "列出 Keychain 中的证书列表 (过滤 Subject 或 Issuer，支持 limit 限制)",
+        aliases: ["list", "l"],
     )
 
     @Argument(help: "查询关键词 (模糊匹配 Subject 或 Issuer，默认为空匹配所有)")
@@ -31,7 +32,8 @@ struct CertLs: ParsableCommand {
         let header = " #  | \("Subject Label".padRightToWidth(labelWidth)) | SHA-1 Fingerprint"
         let rows = results.enumerated().map { index, item in
             let sequence = String(index + 1).padRightToWidth(3)
-            return " \(sequence) | \(item.label.padRightToWidth(labelWidth)) | \(item.fingerprintSHA1)"
+            return
+                " \(sequence) | \(item.label.padRightToWidth(labelWidth)) | \(item.fingerprintSHA1)"
         }
         let tableWidth = max(header.displayWidth, rows.map { $0.displayWidth }.max() ?? 0)
 
