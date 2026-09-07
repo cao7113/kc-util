@@ -8,6 +8,9 @@ let package = Package(
     platforms: [
         .macOS(.v15)  
     ],
+    products: [
+        .library(name: "KeychainKit", targets: ["KeychainKit"])
+    ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
     ],
@@ -22,15 +25,23 @@ let package = Package(
         .executableTarget(
             name: "kc-util",
             dependencies: [
+                "KeychainKit",
                 .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             plugins: [
                 .plugin(name: "GenerateVersionPlugin")
             ]
         ),
+        .target(
+            name: "KeychainKit"
+        ),
+        .testTarget(
+            name: "KeychainKitTests",
+            dependencies: ["KeychainKit"]
+        ),
         .testTarget(
             name: "kc-utilTests",
-            dependencies: ["kc-util"]
+            dependencies: ["kc-util", "KeychainKit"]
         ),
     ],
     swiftLanguageModes: [.v6]
