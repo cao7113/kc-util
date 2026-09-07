@@ -6,7 +6,7 @@ struct CertFindByFp: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "find-by-fp",
         abstract: "根据 SHA-1 或 SHA-256 指纹在 Keychain 中查找证书 (支持从命令行参数或管道接收输入)",
-        aliases: ["by-fp", "fp"],
+        aliases: ["by-fp", "fp"]
     )
 
     @Argument(help: "证书的 SHA-1 或 SHA-256 指纹 (Hex 格式)。若未提供，将尝试从标准输入(管道)读取")
