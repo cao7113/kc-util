@@ -25,12 +25,18 @@ jobs:
       - name: Create Universal Binary
         run: |
           mkdir -p dist/bin
-          lipo -create \
-            .build/arm64-apple-macosx15.0/release/kc-util \
-            .build/x86_64-apple-macosx15.0/release/kc-util \
-            -output dist/bin/kc-util
           
-          # 验证二进制包含双架构
+          # 动态查找 arm64 和 x86_64 架构下生成的二进制路径，避免 SPM 路径格式差异
+          ARM64_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "arm64" | head -n 1)
+          X86_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "x86_64" | head -n 1)
+
+          echo "Found ARM64 Binary: $ARM64_BIN"
+          echo "Found X86_64 Binary: $X86_BIN"
+
+          # 使用 lipo 合并为通用二进制
+          lipo -create "$ARM64_BIN" "$X86_BIN" -output dist/bin/kc-util
+          
+          # 验证二进制信息
           file dist/bin/kc-util
 
       - name: Package Release Asset
