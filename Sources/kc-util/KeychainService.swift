@@ -30,7 +30,102 @@ struct CertificateDetail: Sendable {
     let fingerprintSHA256: String
 }
 
+struct CertificateSummary: Sendable {
+    let label: String          // 即 Subject Summary
+    let issuer: String         // 发行者信息
+    let fingerprintSHA1: String
+}
+
 struct KeychainService {
+/// 获取证书的 Issuer Summary
+    private static func copyIssuerSummary(_ cert: SecCertificate) -> String {
+        // 传入 nil 获取证书的所有属性值
+        if let valuesDict = SecCertificateCopyValues(cert, nil, nil) as? [String: [String: Any]] {
+            for (_, item) in valuesDict {
+                if let label = item[kSecPropertyKeyLabel as String] as? String, label.contains("Issuer") {
+                    if let valueList = item[kSecPropertyKeyValue as String] as? [[String: Any]] {
+                        let components = extractStringValues(from: valueList)
+                        if !components.isEmpty {
+                            return components.joined(separator: ", ")
+                        }
+                    }
+                }
+            }
+        }
+        
+        // 如果没有单独找到 Issuer 属性（例如根证书 Root CA），兜底退回到 Subject 描述
+        let subject = SecCertificateCopySubjectSummary(cert) as String? ?? "Unknown Subject"
+        return subject
+    }
+    // /// 获取证书的 Issuer Summary
+    // private static func copyIssuerSummary(_ cert: SecCertificate) -> String {
+    //     // 通过 SecCertificateCopyValues 提取 Issuer 属性
+    //     let keys = [kSecOIDIssuer: [kSecPropertyKeyLabel: "Issuer"]] as CFDictionary
+    //     if let values = SecCertificateCopyValues(cert, [kSecOIDIssuer] as CFArray, nil) as? [CFString: Any],
+    //        let issuerDict = values[kSecOIDIssuer] as? [String: Any],
+    //        let valueList = issuerDict[kSecPropertyKeyValue as String] as? [[String: Any]] {
+            
+    //         // 组装 Common Name (CN) 或完整的 Issuer 描述
+    //         let issuerParts = valueList.compactMap { dict -> String? in
+    //             guard let val = dict[kSecPropertyKeyValue as String] as? String else { return nil }
+    //             return val
+    //         }
+    //         if !issuerParts.isEmpty {
+    //             return issuerParts.joined(separator: ", ")
+    //         }
+    //     }
+        
+    //     // 兜底方案：无法简单解析时返回默认提示
+    //     return "Unknown Issuer"
+    // }
+
+    /// 列出 Keychain 中的证书，支持模糊匹配 Subject 或 Issuer，并支持数量限制
+    static func listCertificates(query filterQuery: String? = nil, limit: Int? = nil) throws -> [CertificateSummary] {
+        let queryDict: [String: Any] = [
+            kSecClass as String: kSecClassCertificate,
+            kSecMatchLimit as String: kSecMatchLimitAll,
+            kSecReturnRef as String: true
+        ]
+
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(queryDict as CFDictionary, &result)
+
+        guard status == errSecSuccess else {
+            if status == errSecItemNotFound {
+                return []
+            }
+            throw KeychainError.unhandledError(status: status)
+        }
+
+        guard let certs = result as? [SecCertificate] else {
+            return []
+        }
+
+        var summaries: [CertificateSummary] = []
+        let cleanQuery = filterQuery?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() ?? ""
+
+        for cert in certs {
+            if let maxLimit = limit, summaries.count >= maxLimit {
+                break
+            }
+
+            let subject = SecCertificateCopySubjectSummary(cert) as String? ?? "Unknown Subject"
+            let issuer = copyIssuerSummary(cert)
+            let certData = SecCertificateCopyData(cert) as Data
+            let fpSHA1 = sha1(data: certData)
+
+            // query 只匹配 Subject (label) 或 Issuer
+            if cleanQuery.isEmpty || subject.lowercased().contains(cleanQuery) || issuer.lowercased().contains(cleanQuery) {
+                summaries.append(CertificateSummary(
+                    label: subject,
+                    issuer: issuer,
+                    fingerprintSHA1: fpSHA1
+                ))
+            }
+        }
+
+        return summaries
+    }
     
     static func findCertificates(fingerprint targetFP: String) throws -> [CertificateDetail] {
         let cleanFP = targetFP.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
@@ -40,6 +135,8 @@ struct KeychainService {
         }
 
         let query: [String: Any] = [
+            // 由于没有显式指定 kSecMatchSearchList 参数，系统会直接采用 macOS 的默认 Keychain Search List
+            // kSecMatchSearchList as String: keychainList // 自定义 Keychain 数组
             kSecClass as String: kSecClassCertificate,
             kSecMatchLimit as String: kSecMatchLimitAll,
             kSecReturnRef as String: true

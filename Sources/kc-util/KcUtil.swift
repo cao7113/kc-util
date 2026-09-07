@@ -35,7 +35,7 @@ struct KcUtil: ParsableCommand {
 struct Cert: ParsableCommand {
     static let configuration = CommandConfiguration(
         abstract: "证书相关操作",
-        subcommands: [FindByFP.self]
+        subcommands: [FindByFP.self,CertLs.self]
     )
 }
 
