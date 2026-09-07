@@ -19,15 +19,15 @@ jobs:
 
       - name: Build arm64 & x86_64
         run: |
-          swift build -c release --triple arm64-apple-macosx14.0
-          swift build -c release --triple x86_64-apple-macosx14.0
+          swift build -c release --triple arm64-apple-macosx15.0
+          swift build -c release --triple x86_64-apple-macosx15.0
 
       - name: Create Universal Binary
         run: |
           mkdir -p dist/bin
           lipo -create \
-            .build/arm64-apple-macosx14.0/release/kc-util \
-            .build/x86_64-apple-macosx14.0/release/kc-util \
+            .build/arm64-apple-macosx15.0/release/kc-util \
+            .build/x86_64-apple-macosx15.0/release/kc-util \
             -output dist/bin/kc-util
           
           # 验证二进制包含双架构
