@@ -1,0 +1,43 @@
+changelog:
+  exclude:
+    labels:
+      - ignore
+      - dependencies
+    authors:
+      - dependabot[bot]
+      - github-actions[bot]
+  categories:
+    - title: "🚀 New Features"
+      labels:
+        - feat
+        - feature
+      prefixes:
+        - "feat:"
+        - "feat("
+
+    - title: "🐛 Bug Fixes"
+      labels:
+        - fix
+      prefixes:
+        - "fix:"
+        - "fix("
+
+    - title: "🧰 Maintenance & Refactoring"
+      labels:
+        - chore
+        - refactoring
+        - ci
+      prefixes:
+        - "chore:"
+        - "refact:"
+        - "ci:"
+        - "docs:"
+        - "style:"
+
+    - title: "⚠️ Breaking Changes"
+      labels:
+        - breaking
+      prefixes:
+        - "BREAKING CHANGE:"
+        - "feat!:"
+        - "fix!:"

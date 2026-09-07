@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:kc-util}",
+            "name": "Debug kc-util",
+            "target": "kc-util",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug kc-util"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:kc-util}",
+            "name": "Release kc-util",
+            "target": "kc-util",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release kc-util"
+        }
+    ]
+}

@@ -1,13 +1,6 @@
 // The Swift Programming Language
 // https://docs.swift.org/swift-book
 
-// @main
-// struct kc_util {
-//     static func main() {
-//         print("Hello, world!")
-//     }
-// }
-
 import Foundation
 import ArgumentParser
 
@@ -16,6 +9,8 @@ struct KcUtil: ParsableCommand {
     static let configuration = CommandConfiguration(
         commandName: "kc-util",
         abstract: "弥补 security 命令行工具不足的 macOS Keychain 增强工具",
+        // 动态使用插件生成的版本号
+        version: AppVersion.current,
         subcommands: [Cert.self]
     )
 }
