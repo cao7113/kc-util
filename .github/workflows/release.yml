@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build Universal Binary & Release
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build arm64 & x86_64
+        run: |
+          swift build -c release --triple arm64-apple-macosx14.0
+          swift build -c release --triple x86_64-apple-macosx14.0
+
+      - name: Create Universal Binary
+        run: |
+          mkdir -p dist/bin
+          lipo -create \
+            .build/arm64-apple-macosx14.0/release/kc-util \
+            .build/x86_64-apple-macosx14.0/release/kc-util \
+            -output dist/bin/kc-util
+          
+          # 验证二进制包含双架构
+          file dist/bin/kc-util
+
+      - name: Package Release Asset
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          cd dist/bin
+          tar -czf "../kc-util-${VERSION}-apple-darwin.tar.gz" kc-util
+          cd ..
+          shasum -a 256 "kc-util-${VERSION}-apple-darwin.tar.gz" > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/kc-util-*.tar.gz
+            dist/checksums.txt
+          generate_release_notes: true
