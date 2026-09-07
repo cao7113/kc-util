@@ -2,7 +2,7 @@ import Foundation
 import Security
 import CommonCrypto
 
-enum KeychainError: Error, LocalizedError {
+enum KeychainError: Error, LocalizedError, Equatable {
     case invalidFingerprintLength
     case notFound
     case unhandledError(status: OSStatus)
