@@ -1,0 +1,12 @@
+# https://taskfile.dev/docs/guide
+# https://taskfile.dev/reference/templating/
+version: '3'
+tasks:
+  default: swift test
+
+  l: |
+    security find-certificate -a -Z | grep "SHA-1 hash:" # | head -n 1
+
+  try: |
+    # 使用计算出来的二进制路径执行，或通过 swift run
+    swift run kc-util cert find-by-fp 2992F696FCD44748ABCF8049267C78551EE79F1A
