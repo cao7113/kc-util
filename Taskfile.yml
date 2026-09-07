@@ -7,9 +7,9 @@ tasks:
   l: |
     security find-certificate -a -Z | grep "SHA-1 hash:" # | head -n 1
 
+  # .build/arm64-apple-macosx/debug/kc-util cert find-by-fp E57DBE3B62C0DF5C24E05468DED5026B85A1D2A0
   try: |
     # 使用计算出来的二进制路径执行，或通过 swift run
     swift run kc-util cert find-by-fp E57DBE3B62C0DF5C24E05468DED5026B85A1D2A0
-    # .build/arm64-apple-macosx/debug/kc-util cert find-by-fp E57DBE3B62C0DF5C24E05468DED5026B85A1D2A0
-    
+
   v: swift run kc-util --version
