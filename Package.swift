@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "kc-util",
     platforms: [
-        .macOS(.v13)  // 指定支持的 macOS 最低版本
+        .macOS(.v14)  // 指定支持的 macOS 最低版本
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.5.0")
