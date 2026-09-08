@@ -1,3 +1,4 @@
+import Darwin
 import Foundation
 import Security
 import CommonCrypto
@@ -116,11 +117,63 @@ public struct KeychainService {
     }
 
     private static func keychainPath(for cert: SecCertificate) -> String {
-        // SecKeychain / SecKeychainGetPath are deprecated, and their use emits compiler warnings.
-        // The keychain path is only for display, so we intentionally avoid deprecated APIs and
-        // fall back to a stable, non-warning value instead of relying on legacy Security calls.
-        _ = cert
-        return "Unknown Keychain"
+        guard let keychain = legacyKeychain(for: cert) else {
+            return "Unknown Keychain"
+        }
+
+        return legacyKeychainPath(for: keychain) ?? "Unknown Keychain"
+    }
+
+    private static func legacyKeychain(for cert: SecCertificate) -> SecKeychain? {
+        guard let libraryHandle = securityLibraryHandle() else {
+            return nil
+        }
+        defer { dlclose(libraryHandle) }
+
+        typealias SecKeychainItemCopyKeychainFunc = @convention(c) (SecKeychainItem, UnsafeMutablePointer<SecKeychain?>?) -> OSStatus
+
+        guard let keychainCopySymbol = dlsym(libraryHandle, "SecKeychainItemCopyKeychain") else {
+            return nil
+        }
+
+        let keychainCopy = unsafeBitCast(keychainCopySymbol, to: SecKeychainItemCopyKeychainFunc.self)
+        let keychainItem = unsafeBitCast(cert, to: SecKeychainItem.self)
+
+        var keychain: SecKeychain?
+        guard keychainCopy(keychainItem, &keychain) == errSecSuccess, let keychain else {
+            return nil
+        }
+
+        return keychain
+    }
+
+    private static func legacyKeychainPath(for keychain: SecKeychain) -> String? {
+        guard let libraryHandle = securityLibraryHandle() else {
+            return nil
+        }
+        defer { dlclose(libraryHandle) }
+
+        typealias SecKeychainGetPathFunc = @convention(c) (SecKeychain?, UnsafeMutablePointer<UInt32>?, UnsafeMutablePointer<Int8>?) -> OSStatus
+
+        guard let keychainPathSymbol = dlsym(libraryHandle, "SecKeychainGetPath") else {
+            return nil
+        }
+
+        let keychainPath = unsafeBitCast(keychainPathSymbol, to: SecKeychainGetPathFunc.self)
+
+        var path = [Int8](repeating: 0, count: 4096)
+        var pathLength = UInt32(path.count)
+        guard keychainPath(keychain, &pathLength, &path) == errSecSuccess else {
+            return nil
+        }
+
+        let resolvedPath = path.prefix(Int(pathLength)).map { UInt8(bitPattern: $0) }
+        let value = String(decoding: resolvedPath, as: UTF8.self)
+        return value.isEmpty ? nil : value
+    }
+
+    private static func securityLibraryHandle() -> UnsafeMutableRawPointer? {
+        dlopen("/System/Library/Frameworks/Security.framework/Security", RTLD_NOW)
     }
 
     private static func extractStringValues(from list: [[AnyHashable: Any]]) -> [String] {

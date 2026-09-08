@@ -17,35 +17,59 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build arm64 & x86_64
+      - name: Build arm64 Release Binary
         run: |
-          swift build -c release --triple arm64-apple-macosx15.0
-          swift build -c release --triple x86_64-apple-macosx15.0
-
-      - name: Create Universal Binary
-        run: |
-          mkdir -p dist/bin
+          # 1. 清理环境，确保没有缓存干扰
+          swift package clean
           
-          # 动态查找 arm64 和 x86_64 架构下生成的二进制路径，避免 SPM 路径格式差异
-          ARM64_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "arm64" | head -n 1)
-          X86_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "x86_64" | head -n 1)
-
-          echo "Found ARM64 Binary: $ARM64_BIN"
-          echo "Found X86_64 Binary: $X86_BIN"
-
-          # 使用 lipo 合并为通用二进制
-          lipo -create "$ARM64_BIN" "$X86_BIN" -output dist/bin/kc-util
-          
-          # 验证二进制信息
-          file dist/bin/kc-util
+          # 2. 原生 Release 编译（macos-15 Runner 默认即为 arm64，无需显式指定 triple）
+          swift build -c release --disable-sandbox
 
       - name: Package Release Asset
         run: |
+          mkdir -p dist/bin
+          
+          # 3. SPM 默认产物直接存放在 .build/release/kc-util
+          cp .build/release/kc-util dist/bin/
+          
+          # 4. 打印二进制架构，确保输出为 arm64
+          file dist/bin/kc-util
+          
           VERSION=${GITHUB_REF_NAME}
           cd dist/bin
-          tar -czf "../kc-util-${VERSION}-apple-darwin.tar.gz" kc-util
+          tar -czf "../kc-util-${VERSION}-arm64-apple-darwin.tar.gz" kc-util
           cd ..
-          shasum -a 256 "kc-util-${VERSION}-apple-darwin.tar.gz" > checksums.txt
+          shasum -a 256 "kc-util-${VERSION}-arm64-apple-darwin.tar.gz" > checksums.txt
+
+      # - name: Build arm64 & x86_64
+      #   run: |
+      #     swift build -c release --triple arm64-apple-macosx15.0
+      #     swift build -c release --triple x86_64-apple-macosx15.0
+
+      # - name: Create Universal Binary
+      #   run: |
+      #     mkdir -p dist/bin
+          
+      #     # 动态查找 arm64 和 x86_64 架构下生成的二进制路径，避免 SPM 路径格式差异
+      #     ARM64_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "arm64" | head -n 1)
+      #     X86_BIN=$(find .build -type f -path "*/release/kc-util" | grep -i "x86_64" | head -n 1)
+
+      #     echo "Found ARM64 Binary: $ARM64_BIN"
+      #     echo "Found X86_64 Binary: $X86_BIN"
+
+      #     # 使用 lipo 合并为通用二进制
+      #     lipo -create "$ARM64_BIN" "$X86_BIN" -output dist/bin/kc-util
+          
+      #     # 验证二进制信息
+      #     file dist/bin/kc-util
+
+      # - name: Package Release Asset
+      #   run: |
+      #     VERSION=${GITHUB_REF_NAME}
+      #     cd dist/bin
+      #     tar -czf "../kc-util-${VERSION}-apple-darwin.tar.gz" kc-util
+      #     cd ..
+      #     shasum -a 256 "kc-util-${VERSION}-apple-darwin.tar.gz" > checksums.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
